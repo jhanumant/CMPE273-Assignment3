@@ -26,7 +26,7 @@ Start the  server:
 ```
 go run RESTTripPlanner.go
 ```
-The input Location Id's  are:
+The input Location Id's  are:  
 5: Fairmont Hotel, San Francisco (950 Mason St,San Francisco,CA 94108)  
 6: Golden Gate Bridge,California  
 7: Pier 39 (Beach Street and The Embarcadero,San Francisco,CA 94133 )  
