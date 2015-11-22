@@ -26,56 +26,73 @@ Start the  server:
 ```
 go run RESTTripPlanner.go
 ```
+The input Location Id's  are:
+5: Fairmont Hotel, San Francisco (950 Mason St,San Francisco,CA 94108)
+6: Golden Gate Bridge,California
+7: Pier 39 (Beach Street and The Embarcadero,San Francisco,CA 94133 )
+8: Golden gate Park
+9: Twin Peaks (501 Twin Peaks Blvd,San Francisco,CA 94114)
+
 ### Make POST calls from Client to the URL using cURL
 ```
-curl -X POST -d "{\"starting_from_location_id\":\"2\",\"location_ids\":[\"1\",\"3\",\"4\"]}" http://localhost:8082/trips
+curl -X POST -d "{\"starting_from_location_id\":\"5\",\"location_ids\":[\"6\",\"7\",\"8\",\"9\"]}" http://localhost:8082/trips
 ```
 ```
 Response:
-{"id":1700,"status":"planning","starting_from_location_id":"2","best_route_location_ids":["4","3","1"],"total_uber_costs":88,"total_uber_duration":4974,"total_distance":64.77000000000001}
+{"id":100,"status":"planning","starting_from_location_id":"5","best_route_location_ids":["7","6","8","9"],"total_uber_costs":70,"total_uber_duration":4069,"total_distance":27.48}
 ```
 ### Make GET calls From Client to the URL using cURL
 ```
-curl -X GET http://localhost:8082/trips/1700
+curl http://localhost:8082/trips/100
 ```
 ```
 Response:
-{"id":1700,"status":"planning","starting_from_location_id":"2","best_route_location_ids":["4","3","1"],"total_uber_costs":88,"total_uber_duration":4974,"total_distance":64.77000000000001}
+{"id":100,"status":"planning","starting_from_location_id":"5","best_route_location_ids":["7","6","8","9"],"total_uber_costs":70,"total_uber_duration":4069,"total_distance":27.48}
 ```
 ### Make PUT calls from Client to the URL using cURL
 First PUT call
 ```
-curl -X PUT http://localhost:8082/trips/1700/request
+curl -X PUT http://localhost:8082/trips/100/request
 ```
 ```
 Response:
-{"id":1700,"status":"processing","starting_from_location_id":"2","next_destination_location_id":"4","best_route_location_ids":["4","3","1"],"total_uber_costs":88,"total_uber_duration":4974,"total_distance":64.77000000000001,"uber_wait_time_eta":9}
+{"id":100,"status":"processing","starting_from_location_id":"5","next_destination_location_id":"7","best_route_location_ids":["7","6","8","9"],"total_uber_costs":70,"total_uber_duration":4069,"total_distance":27.48,"uber_wait_time_eta":2}
 ```
 Another PUT call
 ```
-curl -X PUT http://localhost:8082/trips/1700/request
+curl -X PUT http://localhost:8082/trips/100/request
 ```
 ```
 Response:
-{"id":1700,"status":"processing","starting_from_location_id":"2","next_destination_location_id":"3","best_route_location_ids":["4","3","1"],"total_uber_costs":88,"total_uber_duration":4974,"total_distance":64.77000000000001,"uber_wait_time_eta":9}
+{"id":100,"status":"processing","starting_from_location_id":"5","next_destination_location_id":"6","best_route_location_ids":["7","6","8","9"],"total_uber_costs":70,"total_uber_duration":4069,"total_distance":27.48,"uber_wait_time_eta":2}
 ```
 Third PUT call
 ```
-curl -X PUT http://localhost:8082/trips/1700/request
+curl -X PUT http://localhost:8082/trips/100/request
 ```
 ```
 Response:
-{"id":1700,"status":"processing","starting_from_location_id":"2","next_destination_location_id":"1","best_route_location_ids":["4","3","1"],"total_uber_costs":88,"total_uber_duration":4974,"total_distance":64.77000000000001,"uber_wait_time_eta":9}
+{"id":100,"status":"processing","starting_from_location_id":"5","next_destination_location_id":"8","best_route_location_ids":["7","6","8","9"],"total_uber_costs":70,"total_uber_duration":4069,"total_distance":27.48,"uber_wait_time_eta":2}
 ```
-Last PUT call
+Fourth PUT call
 ```
-curl -X PUT http://localhost:8082/trips/1700/request
+curl -X PUT http://localhost:8082/trips/100/request
 ```
 ```
 Response:
-{"Message":"You have reached your destination."}
+{"id":100,"status":"processing","starting_from_location_id":"5","next_destination_location_id":"9","best_route_location_ids":["7","6","8","9"],"total_uber_costs":70,"total_uber_duration":4069,"total_distance":27.48,"uber_wait_time_eta":2}
 ```
-Comments: Run the RESTTripPlanner.go file first using "go run RESTTripPlanner.go" (without double quotes) and in separate command prompt run the cURL command as specified above. The number of PUT calls are limited to the number of locations in the request(including the starting location). When the last location in 'best_route_location_ids' is reached and you place an another PUT call, you get the message "You have reached your destination."
+LAST PUT call
+```
+curl -X PUT http://localhost:8082/trips/100/request
+```
+```
+Response:
+{"id":100,"status":"processing","starting_from_location_id":"5","next_destination_location_id":"5","best_route_location_ids":["7","6","8","9"],"total_uber_costs":70,"total_uber_duration":4069,"total_distance":27.48,"uber_wait_time_eta":2}
+```
+
+Comments: Run the RESTTripPlanner.go file first using "go run RESTTripPlanner.go" (without double quotes) and in separate command prompt run the cURL command as specified above. The number of PUT calls for a single trip are limited to the number of locations in the request(including the starting location). 
+When the next_destination_location_id equals starting_from_location_id, the trip is completed. However, if you place further PUT requests the trip starts again.
 
 The same can be achieved using postman(application) where you can post raw values to URL and retrieve data
-
+Output images of both have been attached.
