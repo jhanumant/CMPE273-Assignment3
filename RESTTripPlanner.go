@@ -133,6 +133,7 @@ func PostTripLocations(rw http.ResponseWriter, request *http.Request,p httproute
 	for a,arr:= range sortSlice{
 		Array[a] = arr.Location_id
 	}
+	temp:=1
 	length:=len(Array)
 	if length > 1{
 		for j:=1; j < length ;j++{
@@ -142,14 +143,22 @@ func PostTripLocations(rw http.ResponseWriter, request *http.Request,p httproute
 				 output.Total_uber_costs = output.Total_uber_costs + sortSlice[0].Cost
 				 output.Total_uber_duration = output.Total_uber_duration + sortSlice[0].Duration
 				 output.Total_distance = output.Total_distance+ sortSlice[0].Distance
+				 for z:=1;z<len(Array);z++{
+					Array[z] = sortSlice[z-1].Location_id
+					}
 			 }else{
 			 	output.Best_route_location_ids[j]=Array[0]
 			 }
 			 if(len(Array) > 1){
-			 	Array = Array[j:]
+			 	Array = Array[temp:]
 			 }
 		}
 	}
+	tempArray :=[] string{Array[0],input.Starting_from_location_id}
+	sortSlice = Sorting(tempArray,Array[0])
+	output.Total_uber_costs = output.Total_uber_costs + sortSlice[0].Cost
+	output.Total_uber_duration = output.Total_uber_duration + sortSlice[0].Duration
+	output.Total_distance = output.Total_distance+ sortSlice[0].Distance
 	output.Status="planning"
 	o := session.DB("users").C("trips")
 	idResult.Id = 0
@@ -268,9 +277,15 @@ func PutTripLocations(rw http.ResponseWriter, request *http.Request,p httprouter
 				return
 	}
 	index:= data.Index
+	var tempIn string
+	if(index==0){
+		tempIn = data.Starting_from_location_id
+	}else{
+		tempIn = data.Best_route_location_ids[index-1]
+	}
 	if(index <len(data.Best_route_location_ids)){
 		if(data.Starting_from_location_id!=data.Best_route_location_ids[index]){
-			request_id,eta,status = getDetails(data.Starting_from_location_id,data.Best_route_location_ids[index])
+			request_id,eta,status = getDetails(tempIn,data.Best_route_location_ids[index])
 			data.Next_destination_location_id = data.Best_route_location_ids[index]
 			data.Uber_wait_time_eta = eta
 			data.Status = status
@@ -286,8 +301,10 @@ func PutTripLocations(rw http.ResponseWriter, request *http.Request,p httprouter
 				defer resp.Body.Close()
 				result,_:=json.Marshal(data)
 				fmt.Fprintln(rw,string(result))	
+				tempIn = data.Best_route_location_ids[index]
 				index++
 				err = c.Update(bson.M{"id":params},bson.M{"$set":bson.M{"index":index}})
+				
 			}	
 		}else{
 			m.Msg = "Starting Location and destination cannot be same. Place another PUT"
@@ -297,11 +314,26 @@ func PutTripLocations(rw http.ResponseWriter, request *http.Request,p httprouter
 			err = c.Update(bson.M{"id":params},bson.M{"$set":bson.M{"index":index}})
 			}
 	}else{
-		m.Msg = "You have reached your destination."
-		result,_:=json.Marshal(m)
-		fmt.Fprintln(rw,string(result))
-		index=0
-		err = c.Update(bson.M{"id":params},bson.M{"$set":bson.M{"index":index}})
+			request_id,eta,status = getDetails(tempIn,data.Starting_from_location_id)
+			data.Next_destination_location_id = data.Starting_from_location_id
+			data.Uber_wait_time_eta = eta
+			data.Status = status
+			jsonStr,_:= json.Marshal(map[string] interface{}{"status":"completed"})
+			req,err := http.NewRequest("PUT","https://sandbox-api.uber.com/v1/sandbox/requests/"+request_id,bytes.NewBuffer(jsonStr))
+			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("Authorization","Bearer "+access_key)
+			client := &http.Client{}
+		    resp, err := client.Do(req)
+		    if err!=nil{
+				fmt.Println("Error:",err)
+			}else{
+				defer resp.Body.Close()
+				result,_:=json.Marshal(data)
+				fmt.Fprintln(rw,string(result))	
+				index=0
+				err = c.Update(bson.M{"id":params},bson.M{"$set":bson.M{"index":index}})
+				
+			}
 	}
 
 }
